@@ -62,7 +62,7 @@ var server;
 var dockerMock = require('docker-mock');
 
 describe("testing hosts deployment", function () {
-    var soajsauth, containerInfo;
+    var soajsauth, containerInfo, dockerNodeId;
     before(function (done) {
 	    process.env.SOAJS_ENV_WORKDIR = process.env.APP_DIR_FOR_CODE_COVERAGE;
 	    console.log("***************************************************************");
@@ -91,8 +91,8 @@ describe("testing hosts deployment", function () {
 
                 var nodeRecord = {
                     "recordType" : "node",
-                    "id" : "aacrh437ty7tnfui56phe3pzx",
-                    "name" : "docker-mock",
+                    "id" : "",
+                    "name" : "docker-test",
                     "ip" : "127.0.0.1",
                     "dockerPort" : 2376,
                     "swarmPort" : 2377,
@@ -280,6 +280,55 @@ describe("testing hosts deployment", function () {
         });
     });
 
+    before('Activate swarm mode for local docker engine', function (done) {
+        var params = {
+            method: 'POST',
+            uri: 'http://unix:/var/run/docker.sock:/swarm/init',
+            json: true,
+            headers: {
+                Host: '127.0.0.1'
+            },
+            body: {
+                "ListenAddr": "0.0.0.0:2377",
+                "AdvertiseAddr": "127.0.0.1:2377",
+                "ForceNewCluster": true
+            }
+        };
+
+        request(params, function (error, response, nodeId) {
+            assert.ifError(error);
+            mongo.update('docker', {recordType: 'node', name: 'docker-test'}, {$set: {id: nodeId}}, function (error) {
+                assert.ifError(error);
+                dockerNodeId = nodeId;
+
+                params = {
+                    method: 'POST',
+                    uri: 'http://unix:/var/run/docker.sock:/networks/create',
+                    json: true,
+                    headers: {
+                        Host: '127.0.0.1'
+                    },
+                    body: {
+                        "Name": 'soajsnet',
+                        "Driver": 'overlay',
+                        "Internal": false,
+                        "CheckDuplicate": false,
+                        "EnableIPv6": false,
+                        "IPAM": {
+                            "Driver": 'default'
+                        }
+                    }
+                };
+
+                request(params, function (error, response, body) {
+                    assert.ifError(error);
+
+                    done();
+                });
+            });
+        });
+    });
+
     after(function (done) {
         mongo.closeDb();
         server.close();
@@ -359,7 +408,7 @@ describe("testing hosts deployment", function () {
                     },
                     qs: {
                         env: 'DASHBOARD',
-                        nodeId: 'aacrh437ty7tnfui56phe3pzx'
+                        nodeId: dockerNodeId
                     },
                     form: {
                         type: 'hostname',
@@ -381,7 +430,7 @@ describe("testing hosts deployment", function () {
                     },
                     qs: {
                         env: 'DASHBOARD',
-                        nodeId: 'aacrh437ty7tnfui56phe3pzx'
+                        nodeId: dockerNodeId
                     },
                     form: {
                         type: 'role',
@@ -424,7 +473,7 @@ describe("testing hosts deployment", function () {
                     },
                     qs: {
                         env: 'DASHBOARD',
-                        nodeId: 'aacrh437ty7tnfui56phe3pzx'
+                        nodeId: dockerNodeId
                     }
                 };
 
