@@ -17,9 +17,18 @@ hacloudServices.service('hacloudSrv', ['ngDataApi', '$timeout', '$modal', functi
     }
 
     function addNode(currentScope) {
+        var formConfig = angular.copy(environmentsConfig.form.node);
+        if (currentScope.envPlatform === 'kubernetes') {
+            for (var i = formConfig.entries.length - 1; i >= 0; i--) {
+                if (formConfig.entries[i].name === 'port' || formConfig.entries[i].name === 'role') {
+                    formConfig.entries.splice(i, 1);
+                }
+            }
+        }
+
         var options = {
 			timeout: $timeout,
-			form: environmentsConfig.form.node,
+			form: formConfig,
 			name: 'addNode',
 			label: 'Add New Node',
 			actions: [
@@ -528,11 +537,13 @@ hacloudServices.service('hacloudSrv', ['ngDataApi', '$timeout', '$modal', functi
             version: serviceVersion
         };
 
+        overlayLoading.show();
         getSendDataFromServer(currentScope, ngDataApi, {
             method: 'get',
             routeName: '/dashboard/hacloud/services/delete',
             params: params
         }, function (error, response) {
+            overlayLoading.hide();
             if (error) {
                 currentScope.displayAlert('danger', error.message);
             }
@@ -562,7 +573,7 @@ hacloudServices.service('hacloudSrv', ['ngDataApi', '$timeout', '$modal', functi
 
                 $scope.onSubmit = function () {
                     var params = {
-                        env: $scope.service.env,
+                        envCode: $scope.service.env,
                         name: $scope.service.name,
                         version: $scope.service.version
                     };
@@ -1099,6 +1110,8 @@ hacloudServices.service('hacloudSrv', ['ngDataApi', '$timeout', '$modal', functi
 
                 currentScope.services = [];
                 currentScope.service = "";
+                currentScope.versions = [];
+                currentScope.version = "";
                 currentScope.groupConfigs = "";
                 currentScope.groupConfig = "";
                 currentScope.branches = [];
@@ -1116,6 +1129,7 @@ hacloudServices.service('hacloudSrv', ['ngDataApi', '$timeout', '$modal', functi
                 currentScope.useLocalSOAJS = true;
                 currentScope.message = {};
                 currentScope.defaultEnvVariables = "<ul><li>SOAJS_DEPLOY_HA=true</li><li>SOAJS_SRV_AUTOREGISTERHOST=true</li><li>NODE_ENV=production</li><li>SOAJS_ENV=" + currentScope.envCode + "</li><li>SOAJS_PROFILE=" + currentScope.profile + "</li></ul></p>";
+                currentScope.imagePrefix = 'soajsorg';
 
                 $scope.getServices = function (cb) {
                     getSendDataFromServer(currentScope, ngDataApi, {
@@ -1163,17 +1177,15 @@ hacloudServices.service('hacloudSrv', ['ngDataApi', '$timeout', '$modal', functi
                     });
                 };
 
-                $scope.addNginx = function () {
-                    if (env.toLowerCase() !== 'dashboard') {
-                        currentScope.services.unshift({
-                            UIGroup: 'Web Servers',
-                            name: 'Nginx',
-                            type: 'nginx'
-                        });
-                    }
-                };
-
                 $scope.selectService = function (service) {
+                    currentScope.versions = Object.keys(service.versions);
+                    if (currentScope.version) {
+                        currentScope.version = "";
+                    }
+                    if (currentScope.versions.length === 1) {
+                        currentScope.version = currentScope.versions[0];
+                    }
+
                     currentScope.branches = [];
                     currentScope.branch = '';
                     currentScope.groupConfigs = '';
@@ -1354,7 +1366,9 @@ hacloudServices.service('hacloudSrv', ['ngDataApi', '$timeout', '$modal', functi
                         'useLocalSOAJS': currentScope.useLocalSOAJS,
                         'haService': true,
                         'haCount': currentScope.replicaCount,
-                        'memoryLimit': (currentScope.memoryLimit * 1048576) //converting to bytes
+                        'memoryLimit': (currentScope.memoryLimit * 1048576), //converting to bytes
+                        "imagePrefix": currentScope.imagePrefix,
+                        "version": parseInt(currentScope.version)
                     };
 
                     if (currentScope.commit && !currentScope.confirmBranch) {
@@ -1372,9 +1386,6 @@ hacloudServices.service('hacloudSrv', ['ngDataApi', '$timeout', '$modal', functi
                         params.name = currentScope.service.name;
                     }
 
-                    if (currentScope.service.latest) {
-                        params.version = currentScope.service.latest;
-                    }
                     currentScope.port = currentScope.service.port;
 
                     if (currentScope.envVariables && currentScope.envVariables !== '') {
@@ -1455,7 +1466,8 @@ hacloudServices.service('hacloudSrv', ['ngDataApi', '$timeout', '$modal', functi
 
                 function newNginx(currentScope) {
                     var params = {
-                        envCode: env
+                        envCode: env,
+                        imagePrefix: currentScope.imagePrefix
                     };
 
                     if (currentScope.exposedPort) {
@@ -1487,7 +1499,6 @@ hacloudServices.service('hacloudSrv', ['ngDataApi', '$timeout', '$modal', functi
                 if (currentScope.hosts && currentScope.hosts.controller) {
                     $scope.getServices(function () {
                         $scope.getDaemons();
-                        $scope.addNginx();
                     });
                 }
                 else {

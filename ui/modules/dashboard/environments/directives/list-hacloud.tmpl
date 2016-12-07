@@ -7,10 +7,16 @@
 			<alert type="danger" ng-if="currentScope.message.danger">{{currentScope.message.danger}}</alert>
 			<form name="deploy" id="deploy" ng-submit="deploy.$valid && onSubmit()">
 				<div class="form-group">
-					<label>{{translation.serviceName[LANG]}}</label>
-					<select class="form-control" ng-required="true" ng-options="service as service.name group by service.UIGroup for service in currentScope.services" ng-model="currentScope.service" ng-change="selectService(currentScope.service)"></select>
-					<br>
-
+					<div>
+						<label>{{translation.serviceName[LANG]}}</label>
+						<select class="form-control" ng-required="true" ng-options="service as service.name group by service.UIGroup for service in currentScope.services" ng-model="currentScope.service" ng-change="selectService(currentScope.service)"></select>
+						<br>
+					</div>
+					<div>
+						<label>{{translation.serviceVersion[LANG]}}</label>
+						<select class="form-control" ng-required="true" ng-options="version as version for version in currentScope.versions" ng-model="currentScope.version"></select>
+						<br>
+					</div>
 					<div ng-if="currentScope.groupConfigs">
 						<label>{{translation.daemonGroupConfig[LANG]}}</label>
 						<select class="form-control" ng-required="true" ng-options="group as group.daemonConfigGroup for group in currentScope.groupConfigs" ng-model="currentScope.groupConfig"></select>
@@ -20,6 +26,12 @@
 						<label>{{translation.branch[LANG]}}</label><img class="loadingImage" ng-src={{imagePath}} ng-if="currentScope.loadingBranches">
 						<select class="form-control" ng-required="true" ng-options="branch as branch.name for branch in currentScope.branches" ng-model="currentScope.branch" ng-change="selectBranch(currentScope.branch)"></select>
 						<br>
+					</div>
+					<div>
+						<label>Image Prefix</label>
+						<input type="text" class="form-control" ng-required="true" ng-model="currentScope.imagePrefix" />
+						<label class="fieldMsg">The default image that will be used is soajsorg/soajs. Specify a different prefix if you intend to use a custom image</label>
+						<br />
 					</div>
 					<div ng-if="currentScope.service.type === 'nginx'">
 						<label>Exposed Port</label>
@@ -138,7 +150,7 @@
 			<br />
 			<div ng-if="localDeployment">
 				<alert type="info">
-					Node management is not permitted in local deployment mode
+					Node management is not supported in local deployment mode
 				</alert>
 				<br />
 			</div>
@@ -162,12 +174,14 @@
                             <a href="" ng-if="access.hacloud.nodes.remove" ng-confirm-click="Are you sure you want to remove this node?" ng-click="removeNode(node.id)">
                                 <span class="icon icon-cross" tooltip="Remove Node"></span>
                             </a>
-                            <a ng-if="node.role === 'manager' && access.hacloud.nodes.update" href="" ng-click="updateNode(node, 'role', 'worker')">
-                                <span class="icon icon-arrow-down2" tooltip="Demote To Worker"></span>
-                            </a>
-                            <a ng-if="node.role === 'worker' && access.hacloud.nodes.update" href="" ng-click="updateNode(node, 'role', 'manager')">
-                                <span class="icon icon-arrow-up2" tooltip="Promote To Manager"></span>
-                            </a>
+							<div ng-if="envPlatform === 'docker'">
+								<a ng-if="node.role === 'manager' && access.hacloud.nodes.update" href="" ng-click="updateNode(node, 'role', 'worker')">
+	                                <span class="icon icon-arrow-down2" tooltip="Demote To Worker"></span>
+	                            </a>
+	                            <a ng-if="node.role === 'worker' && access.hacloud.nodes.update" href="" ng-click="updateNode(node, 'role', 'manager')">
+	                                <span class="icon icon-arrow-up2" tooltip="Promote To Manager"></span>
+	                            </a>
+							</div>
                             <a ng-if="node.availability === 'drain' && access.hacloud.nodes.update" href="" ng-click="updateNode(node, 'availability', 'active')">
                                 <span class="icon icon-switch" tooltip="Activate"></span>
                             </a>
@@ -182,7 +196,7 @@
                                 <thead>
                                     <tr class="header">
                                         <td>IP Address</td>
-                                        <td>Docker Port</td>
+                                        <td>{{envPlatform|capitalizeFirst}} Port</td>
                                         <td>Role</td>
                                         <td>Availability</td>
                                         <td>Memory Resources</td>
@@ -192,7 +206,8 @@
                                 <tbody>
                                     <tr>
                                         <td>{{node.ip}}</td>
-                                        <td>{{node.dockerPort}}</td>
+                                        <td ng-if="envPlatform === 'docker'">{{node.dockerPort}}</td>
+										<td ng-if="envPlatform === 'kubernetes'">{{node.kubePort}}</td>
                                         <td>{{node.role}}</td>
                                         <td>{{node.availability}}</td>
                                         <td>{{node.resources.memory | bytesToGbytes}} GB</td>
@@ -207,7 +222,7 @@
         </tab>
         <tab heading="Services" ng-if="access.listHosts">
             <br />
-            <div ng-if="!hosts.controller">
+            <div ng-if="!hosts.controller && (!nginxHosts || nginxHosts.length === 0)">
 				<div ng-if="!isDeploying">
 					<alert type="warning" ng-style="{'text-align': 'center'}">
 	                    This environment has not been deployed yet!
@@ -221,16 +236,16 @@
 	                </alert>
 				</div>
             </div>
-            <div ng-if="hosts.controller">
+            <div ng-if="hosts.controller || (nginxHosts && nginxHosts.length > 0)">
                 <button class="btn btn-primary" ng-if="access.hacloud.services.add" ng-click="deployNewService()">Deploy New Service</button>
                 <button class="btn btn-primary f-right" ng-click="listServices()" ng-if="access.listHosts"><span class="icon icon-loop2"></span>&nbsp;Refresh</button>
                 <br /><br />
-				<fieldset class="groupFieldset" ng-if="nginxHosts">
+				<fieldset class="groupFieldset" ng-if="nginxHosts && nginxHosts.length > 0">
 					<legend>
-                        <a href="" class="icon" ng-class="{'icon-minus': showCtrlHosts, 'icon-plus': !showCtrlHosts}" ng-click="showHideContent('controller')"></a>
+                        <a href="" class="icon" ng-class="{'icon-minus': showNginxHosts, 'icon-plus': !showNginxHosts}" ng-click="showHideContent('nginx')"></a>
                         Nginx Instances
                     </legend>
-					<div class="entryBoxes">
+					<div class="entryBoxes" ng-show="showNginxHosts">
 						<div class="entryBox mb20">
 							<div class="header">
 								<span class="serviceLabelBox">Nginx</span>
@@ -254,7 +269,7 @@
 												<td class="maintenanceHeader">Maintenance</td>
 												<td class="hostnameHeader">Hostname</td>
 												<td class="statusHeader">Status</td>
-												<td class="ipHeader">IP Address</td>
+												<td ng-if="envPlatform === 'docker'" class="ipHeader">IP Address</td>
 											</tr>
 										</thead>
 										<tbody>
@@ -264,12 +279,12 @@
 														<span ng-click="hostLogs(instance.taskName)" class="icon icon-terminal" title="{{translation.getContainerLogs[LANG]}}"></span>
 													</a>
 												</td>
-												<td>{{instance.hostname}}</td>
+												<td>{{instance.taskName}}</td>
 												<td>
 													<span style="color: green" ng-if="instance.running"><b>Healthy</b></span>
 													<span style="color: red" ng-if="!instance.running"><b>Unreachable</b></span>
 												</td>
-												<td>{{instance.networkInfo.ip}}</td>
+												<td ng-if="envPlatform === 'docker'">{{instance.networkInfo.ip}}</td>
 											</tr>
 										</tbody>
 									</table>
@@ -297,7 +312,7 @@
                                             <ul class="dropdown-menu" aria-labelledby="serviceOpsDropdown">
                                                 <li>&nbsp;Deployment</li>
                                                 <li><a href="" ng-if="access.hacloud.services.scale" ng-click="scaleService(serviceInfo.ips)"><span class="icon icon-enlarge"></span>&nbsp;Scale Service</a></li>
-                                                <li><a href="" ng-if="access.hacloud.services.delete" ng-click="deleteService(serviceInfo.serviceHAName)"><span class="icon icon-cross"></span>&nbsp;Delete Service</a></li>
+                                                <li><a href="" ng-if="access.hacloud.services.delete" ng-click="deleteService(serviceInfo.ips[0].serviceName)"><span class="icon icon-cross"></span>&nbsp;Delete Service</a></li>
                                                 <li>&nbsp;Maintenance</li>
                                                 <li><a href="" ng-click="reloadServiceRegistry('controller', serviceInfo.ips)"><span class="icon icon-undo"></span>&nbsp;Reload Registry</a></li>
                                                 <li><a href="" ng-click="awarenessStat('controller', serviceInfo.ips)"><span class="icon icon-connection"></span>&nbsp;Awareness Stat</a></li>
@@ -323,11 +338,11 @@
                                                                 <span class="icon icon-heart"></span>&nbsp;
                                                             </a>
 
-                                                            <a href="" ng-if="access.hacloud.services.logs" ng-show="container.taskName" ng-click="hostLogs(envCode, hosts[service].name, container, hosts[service])">
+                                                            <a href="" ng-if="access.hacloud.services.logs" ng-show="container.taskName" ng-click="hostLogs(container.taskName)">
                                                                 <span class="icon icon-terminal" title="{{translation.getContainerLogs[LANG]}}"></span>&nbsp;
                                                             </a>
                                                         </td>
-                                                        <td>{{container.hostname}}</td>
+                                                        <td>{{container.taskName}}</td>
                                                         <td>
                                                             <span style="color: green" ng-if="container.heartbeat"><b>Healthy</b></span>
                                                             <span style="color: red" ng-if="!container.heartbeat"><b>Unreachable</b></span>
@@ -396,7 +411,7 @@
 	                                                            <span class="icon icon-terminal" title="{{translation.getContainerLogs[LANG]}}"></span>&nbsp;
 	                                                        </a>
 	                                                    </td>
-	                                                    <td>{{container.hostname}}</td>
+	                                                    <td>{{container.taskName}}</td>
 	                                                    <td>
 	                                                        <span style="color: green" ng-if="container.healthy"><b>Healthy</b></span>
 	                                                        <span style="color: red" ng-if="!container.healthy"><b>Unreachable</b></span>

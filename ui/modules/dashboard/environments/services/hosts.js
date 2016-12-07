@@ -1096,7 +1096,7 @@ hostsServices.service('envHosts', ['ngDataApi', '$timeout', '$modal', '$compile'
 							'repo': currentScope.serviceRepo,
 							'useLocalSOAJS': currentScope.useLocalSOAJS
 						};
-
+						
 						if (currentScope.commit && !currentScope.confirmBranch) {
 							params.branch = getBranchFromCommit(currentScope.commit);
 							params.commit = currentScope.commit;
@@ -1123,7 +1123,7 @@ hostsServices.service('envHosts', ['ngDataApi', '$timeout', '$modal', '$compile'
 								params.variables[i] = params.variables[i].trim();
 							}
 						}
-
+						params.version = parseInt(params.version);
 						var config = {
 							"method": "send",
 							"routeName": "/dashboard/hosts/deployService",
@@ -1301,33 +1301,6 @@ hostsServices.service('envHosts', ['ngDataApi', '$timeout', '$modal', '$compile'
 				if (container.type === 'nginx') {
 					listNginxHosts(currentScope, env);
 				}
-				else {
-					listZombieContainers(currentScope, env);
-				}
-			}
-		});
-	}
-
-	function listZombieContainers(currentScope, env) {
-		getSendDataFromServer(currentScope, ngDataApi, {
-			method: 'get',
-			routeName: '/dashboard/hosts/container/zombie/list',
-			params: {
-				env: env
-			}
-		}, function (error, result) {
-			if (error) {
-				currentScope.generateNewMsg(env, 'danger', translation.unableToRetrieveZombieContainers[LANG]);
-			}
-			else {
-				currentScope.zombieContainers = [];
-				result.forEach(function (oneContainer) {
-					currentScope.zombieContainers.push({
-						hostname: oneContainer.hostname,
-						type: oneContainer.type,
-						cid: oneContainer.cid
-					});
-				});
 			}
 		});
 	}
@@ -1345,8 +1318,7 @@ hostsServices.service('envHosts', ['ngDataApi', '$timeout', '$modal', '$compile'
 		'infoHost': infoHost,
 		'createHost': createHost,
 		'containerLogs': containerLogs,
-		'deleteContainer': deleteContainer,
-		'listZombieContainers': listZombieContainers
+		'deleteContainer': deleteContainer
 	};
 
 }]);

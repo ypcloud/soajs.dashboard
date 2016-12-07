@@ -1,7 +1,7 @@
 {
   "name": "soajs.dashboard",
   "description": "soajs dashboard service",
-  "version": "0.3.13",
+  "version": "0.4.1",
   "author": {
     "name": "soajs team",
     "email": "team@soajs.org"
@@ -20,7 +20,7 @@
   "devDependencies": {
     "soajs.mongodb.data": "0.2.*",
     "soajs.controller": "0.2.*",
-    "soajs.urac": "0.2.*",
+    "soajs.urac": "0.3.*",
     "grunt": "0.4.5",
     "grunt-contrib-jshint": "*",
     "grunt-jsdoc": "*",
@@ -32,24 +32,26 @@
     "jshint": "*",
     "lodash": "*",
     "mocha": "*",
-    "shelljs": "*",
-    "docker-mock": "aff04/docker-mock.git"
+    "shelljs": "*"
   },
   "dependencies": {
-    "async": "*",
+    "async": "1.5.2",
     "bcrypt": "*",
     "bitbucket-server-nodejs": "^2.10.0",
+    "cron": "*",
     "dockerode": "aff04/dockerode.git",
     "formidable": "*",
     "github": "^0.2.4",
     "gridfs-stream": "*",
+    "kubernetes-client": "^2.2.2",
     "mkdirp": "*",
+    "moment-timezone": "*",
     "ncp": "*",
     "object-hash": "*",
     "request": "*",
     "rimraf": "*",
     "shortid": "^2.2.4",
-    "soajs": "soajs/soajs.git#develop",
+    "soajs": "0.4.*",
     "unzip2": "*"
   }
 }

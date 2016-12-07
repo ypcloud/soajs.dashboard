@@ -197,6 +197,10 @@ var gitAccountsAppConfig = {
 		'soajs/soajs.mongodb.data',
 		'soajs/soajs.utilities',
 		'soajs/soajs.website.contactus',
-		'soajs/soajs.jsconfbeirut'
+		'soajs/soajs.jsconfbeirut',
+		"soajs/soajs.installer",
+		"soajs/soajs.sdk",
+		"soajs/soajs.dashboard.ui",
+		"soajs/soajs.website.ui"
 	]
 };

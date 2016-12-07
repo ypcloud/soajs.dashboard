@@ -21,7 +21,20 @@ environmentsApp.controller('hacloudCtrl', ['$scope', '$cookies', '$timeout', 'ha
     $scope.removeNode = function (nodeId) {
         hacloudSrv.removeNode($scope, nodeId);
     };
-
+	
+	$scope.showHideContent = function (type) {
+		if (type === 'nginx') {
+			$scope.showNginxHosts = !$scope.showNginxHosts;
+		}
+		else if (type === 'controller') {
+			$scope.showCtrlHosts = !$scope.showCtrlHosts;
+		}
+	};
+	
+	$scope.showHideGroupContent = function (groupName) {
+		$scope.groups[groupName].showContent = !$scope.groups[groupName].showContent;
+	};
+	
     $scope.updateNode = function (node, type, newStatus) {
         hacloudSrv.updateNode($scope, node, type, newStatus);
     };
@@ -73,6 +86,8 @@ environmentsApp.controller('hacloudCtrl', ['$scope', '$cookies', '$timeout', 'ha
 
 	injectFiles.injectCss('modules/dashboard/environments/environments.css');
 	$scope.envCode = $cookies.getObject("myEnv").code;
+	$scope.envDeployer = $cookies.getObject("myEnv").deployer;
+	$scope.envPlatform = $scope.envDeployer.selected.split('.')[1];
 
 	if ($scope.access.hacloud.nodes.list) {
 		$scope.listNodes();
@@ -80,7 +95,7 @@ environmentsApp.controller('hacloudCtrl', ['$scope', '$cookies', '$timeout', 'ha
 	if ($scope.access.listHosts) {
 		$scope.listServices();
 	}
-	
+
 }]);
 
 
@@ -88,5 +103,11 @@ environmentsApp.filter('bytesToGbytes', function () {
 	return function (number) {
 		number = number / 1024 / 1024 / 1024;
 		return number.toFixed(2);
+	}
+});
+
+environmentsApp.filter('capitalizeFirst', function () {
+	return function (string) {
+		return string.charAt(0).toUpperCase() + string.substring(1);
 	}
 });

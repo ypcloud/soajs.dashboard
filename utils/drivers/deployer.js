@@ -22,6 +22,11 @@ var deployer = {
         deployer.updateNode(soajs, deployerConfig, options, model, cb);
     },
 
+    "buildNodeRecord": function (soajs, deployerConfig, options, model, cb) {
+        var deployer = getDeployer(deployerConfig);
+        deployer.buildNodeRecord(soajs, deployerConfig, options, model, cb);
+    },
+
     "deployHAService": function (soajs, deployerConfig, options, model, cb) {
         var deployer = getDeployer(deployerConfig);
         deployer.deployHAService(soajs, deployerConfig, options, model, cb);
@@ -35,6 +40,11 @@ var deployer = {
     "inspectHAService": function (soajs, deployerConfig, options, model, cb) {
         var deployer = getDeployer(deployerConfig);
         deployer.inspectHAService(soajs, deployerConfig, options, model, cb);
+    },
+
+    "getServiceComponents": function (soajs, deployerConfig, options, model, cb) {
+        var deployer = getDeployer(deployerConfig);
+        deployer.getServiceComponents(soajs, deployerConfig, options, model, cb);
     },
 
     "inspectHATask": function (soajs, deployerConfig, options, model, cb) {
@@ -55,6 +65,21 @@ var deployer = {
     "getContainerLogs": function (soajs, deployerConfig, options, model, res) {
         var deployer = getDeployer(deployerConfig);
         deployer.getContainerLogs(soajs, deployerConfig, options, model, res);
+    },
+
+    "buildContainerRecords": function (soajs, deployerConfig, options, model, cb) {
+        var deployer = getDeployer(deployerConfig);
+        deployer.buildContainerRecords(soajs, deployerConfig, options, model, cb);
+    },
+
+    "getNewInstances": function (soajs, deployerConfig, options, model, cb) {
+        var deployer = getDeployer(deployerConfig);
+        deployer.getNewInstances(soajs, deployerConfig, options, model, cb);
+    },
+
+    "getRemovedInstances": function (soajs, deployerConfig, options, model, cb) {
+        var deployer = getDeployer(deployerConfig);
+        deployer.getRemovedInstances(soajs, deployerConfig, options, model, cb);
     }
 };
 

@@ -1,8 +1,6 @@
 'use strict';
 var request = require('request');
 var soajs = require('soajs');
-var Mongo = soajs.mongo;
-var mongo = null;
 
 var config = require('./config.js');
 var environment = require('./lib/environment.js');
@@ -61,7 +59,7 @@ service.init(function () {
 	 */
 	service.post("/environment/add", function (req, res) {
 		initBLModel(req, res, environmentBL, dbModel, function (BL) {
-			BL.add(config, req, res);
+			BL.add(config, service, dbModel, req, res);
 		});
 	});
 	service.get("/environment/delete", function (req, res) {
@@ -160,26 +158,6 @@ service.init(function () {
 	service.post("/environment/platforms/deployer/type/change", function (req, res) {
 		initBLModel(req, res, environmentBL, dbModel, function (BL) {
 			BL.changeDeployerType(config, req, res);
-		});
-	});
-	service.post("/environment/nginx/cert/upload", function (req, res) {
-		initBLModel(req, res, environmentBL, dbModel, function (BL) {
-			BL.uploadCerts(config, req, res);
-		});
-	});
-	service.get("/environment/nginx/cert/list", function (req, res) {
-		initBLModel(req, res, environmentBL, dbModel, function (BL) {
-			BL.listNginxCerts(config, req, res);
-		});
-	});
-	service.get("/environment/nginx/cert/delete", function (req, res) {
-		initBLModel(req, res, environmentBL, dbModel, function (BL) {
-			BL.removeNginxCert(config, req, res);
-		});
-	});
-	service.post("/environment/nginx/cert/choose", function (req, res) {
-		initBLModel(req, res, environmentBL, dbModel, function (BL) {
-			BL.chooseExistingNginxCerts(config, req, res);
 		});
 	});
 

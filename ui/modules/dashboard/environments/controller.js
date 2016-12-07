@@ -1,7 +1,7 @@
 "use strict";
 
 var environmentsApp = soajsApp.components;
-environmentsApp.controller('environmentCtrl', ['$scope', '$timeout', '$modal', '$routeParams', '$cookies', 'ngDataApi', 'Upload', 'injectFiles', function ($scope, $timeout, $modal, $routeParams, $cookies, ngDataApi, Upload, injectFiles) {
+environmentsApp.controller('environmentCtrl', ['$scope', '$timeout', '$modal', '$routeParams', '$cookies', 'ngDataApi', 'Upload', 'injectFiles', '$localStorage', function ($scope, $timeout, $modal, $routeParams, $cookies, ngDataApi, Upload, injectFiles, $localStorage) {
 	$scope.$parent.isUserLoggedIn();
 	$scope.newEntry = true;
 	$scope.envId = null;
@@ -122,11 +122,11 @@ environmentsApp.controller('environmentCtrl', ['$scope', '$timeout', '$modal', '
 		$scope.jsonEditor.custom.data = angular.copy ($scope.grid.rows[0].custom);
 
 		$scope.editorLoaded(instance, 'custom');
-	}
+	};
 
 	$scope.loggerLoaded = function (instance) {
 		$scope.editorLoaded(instance, 'logger');
-	}
+	};
 
 	$scope.editorLoaded = function (instance, source) {
 		//bug in jsoneditor: setting default mode to 'code' does not display data
@@ -172,7 +172,37 @@ environmentsApp.controller('environmentCtrl', ['$scope', '$timeout', '$modal', '
 	$scope.getDeploymentDriver = function (deployer, value, technology, type) {
 		deployer.ui[value] = (deployer.selected === technology + '.' + value);
 	};
-
+	
+	function getEnvironments(newEnvRecord, cb) {
+		getSendDataFromServer($scope, ngDataApi, {
+			"method": "get",
+			"routeName": "/dashboard/permissions/get"
+		}, function (error, response) {
+			if (error) {
+				$localStorage.soajs_user = null;
+				$cookies.remove('soajs_auth');
+				$cookies.remove('soajs_dashboard_key');
+				$scope.$parent.displayAlert('danger', error.code, true, 'dashboard', error.message);
+			}
+			else {
+				$localStorage.environments = response.environments;
+				
+				if (newEnvRecord) {
+					$cookies.putObject("myEnv", newEnvRecord);
+				}
+				else {
+					response.environments.forEach(function (oneEnv) {
+						if (oneEnv.code.toLowerCase() === 'dashboard') {
+							$cookies.putObject("myEnv", oneEnv);
+						}
+					});
+				}
+				$scope.$parent.reRenderMenu('deployment');
+				return cb();
+			}
+		});
+	}
+	
 	$scope.addEnvironment = function () {
 		var configuration = environmentsConfig.form.template;
 		$scope.grid.rows.forEach(function (oneEnv) {
@@ -219,10 +249,16 @@ environmentsApp.controller('environmentCtrl', ['$scope', '$timeout', '$modal', '
 								$scope.form.displayAlert('danger', error.code, true, 'dashboard', error.message);
 							}
 							else {
-								$scope.$parent.displayAlert('warning', translation.environmentCreatedSuccessfully[LANG] + ' ' + translation.inOrderToViewNewEnvYouNeedToReLogin[LANG]);
+								$scope.$parent.displayAlert('success', translation.environmentCreatedSuccessfully[LANG]);
 								$scope.modalInstance.close('ok');
 								$scope.form.formData = {};
-								$scope.updateEnvironment(data[0]);
+								getEnvironments({
+									code: data[0].code,
+									_id: data[0]._id.toString(),
+									deployer: data[0].deployer
+								}, function () {
+									$scope.updateEnvironment(data[0]);
+								});
 							}
 						});
 					}
@@ -288,52 +324,19 @@ environmentsApp.controller('environmentCtrl', ['$scope', '$timeout', '$modal', '
 
 		postData.services.config.session.unset = (postData.services.config.session.unset) ? "destroy" : "keep";
 
-
-		postData.deployer = {
-			"type": "",
-			"selected": "",
-			"container":{
-				"dockermachine":{
-					"local": {
-						"host": "",
-						"port": 0,
-						"config":{
-							"HostConfig": {
-								"NetworkMode": ""
-							},
-							"MachineName": ""
-						}
-					},
-					"cloud":{
-						"rackspace": {
-							"host": "",
-							"port": 0
-						}
-					}
-				},
-				"docker": {
-					"socket": {
-						"socketPath": "/var/run/docker.sock"
-					}
-				}
-			}
-		};
-
 		getSendDataFromServer($scope, ngDataApi, {
 			"method": "send",
 			"routeName": "/dashboard/environment/" + (($scope.newEntry) ? "add" : "update"),
 			"params": ($scope.newEntry) ? {} : {"id": $scope.envId},
 			"data": postData
-		}, function (error) {
+		}, function (error, response) {
 			if (error) {
 				$scope.$parent.displayAlert('danger', error.code, true, 'dashboard', error.message);
 			}
 			else {
 				var successMessage = translation.environment[LANG] + ' ' + (($scope.newEntry) ? translation.created[LANG] : translation.updated[LANG]) + ' ' + translation.successfully[LANG];
-				if ($scope.newEntry) {
-					successMessage = successMessage + ' ' + translation.inOrderToViewNewEnvYouNeedToReLogin[LANG];
-				}
-				$scope.$parent.displayAlert(($scope.newEntry) ? 'warning' : 'success', successMessage);
+				
+				$scope.$parent.displayAlert('success', successMessage);
 			}
 		});
 	};
@@ -403,7 +406,9 @@ environmentsApp.controller('environmentCtrl', ['$scope', '$timeout', '$modal', '
 			else {
 				if (response) {
 					$scope.$parent.displayAlert('success', translation.selectedEnvironmentRemoved[LANG]);
-					$scope.listEnvironments();
+					getEnvironments(null, function () {
+						$scope.listEnvironments();
+					});
 				}
 				else {
 					$scope.$parent.displayAlert('danger', translation.unableRemoveSelectedEnvironment[LANG]);

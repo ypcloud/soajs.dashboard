@@ -32,10 +32,8 @@ module.exports = {
 	"profileLocation": process.env.SOAJS_PROFILE_LOC || "/opt/soajs/FILES/profiles/",
 
 	"images": {
-		//////////////////////////////////////////////////////////////////
-		"nginx": 'soajstest/nginx', //TEMPORARY: USING TEST IMAGE NAME//
-		"services": "soajstest/soajs" //TEMPORARY: USING TEST IMAGE NAME//
-		//////////////////////////////////////////////////////////////////
+		"nginx": 'nginx',
+		"services": "soajs"
 	},
 
 	"imagesDir": "/opt/soajs/FILES/deployer/",
@@ -376,11 +374,33 @@ module.exports = {
 			},
 			'interval': {
 				'source': ['body.interval'],
-				'required': true,
+				'required': false,
 				'validation': {
 					'type': 'number'
 				}
 			},
+			'cronTime': {
+				'source': ['body.cronTime'],
+				'required': false,
+				'validation': {
+					'type': 'text'
+				}
+			},
+			'timeZone': {
+				'source': ['body.timeZone'],
+				'required': false,
+				'validation': {
+					'type': 'text'
+				}
+			},
+			'cronTimeDate': {
+				'source': ['body.cronTimeDate'],
+				'required': false,
+				'validation': {
+					'type': 'text'
+				}
+			},
+
 			'status': {
 				'source': ['body.status'],
 				'required': true,
@@ -512,13 +532,6 @@ module.exports = {
 				"default": "site",
 				"validation": {
 					"type": "string"
-				}
-			},
-			"deployer": {
-				"source": ['body.deployer'],
-				"required": true,
-				"validation": {
-					"type": "object"
 				}
 			}
 		},
@@ -1051,6 +1064,14 @@ module.exports = {
 					"type": "string",
 					"enum": ["admin", "product", "client"]
 				}
+			},
+			"negate": {
+				"source": ['query.negate'],
+				"required": false,
+				"default": false,
+				"validation": {
+					"type": "boolean"
+				}
 			}
 		},
 		"/tenant/add": {
@@ -1574,14 +1595,30 @@ module.exports = {
 				"l": "Add Daemon Group Configuration",
 				"group": "Daemons"
 			},
-			'commonFields': ['groupName', 'daemon', 'interval', 'status', 'processing', 'jobs', 'order', 'solo']
+			'commonFields': ['groupName', 'daemon', 'cronTime', 'cronTimeDate', 'timeZone', 'interval', 'status', 'processing', 'jobs', 'order', 'solo'],
+			'type':{
+				"required": true,
+				"source": ["body.type"],
+				"validation":{
+					"type": "string",
+					"enum": ["interval", "cron", "once"]
+				}
+			}
 		},
 		"/daemons/groupConfig/update": {
 			_apiInfo: {
 				"l": "Update Daemon Group Configuration",
 				"group": "Daemons"
 			},
-			'commonFields': ['id', 'groupName', 'daemon', 'interval', 'status', 'processing', 'jobs', 'order', 'solo']
+			'commonFields': ['id', 'groupName', 'daemon', 'cronTime', 'cronTimeDate', 'timeZone', 'interval', 'status', 'processing', 'jobs', 'order', 'solo'],
+			'type':{
+				"required": true,
+				"source": ["body.type"],
+				"validation":{
+					"type": "string",
+					"enum": ["interval", "cron", "once"]
+				}
+			}
 		},
 		"/daemons/groupConfig/delete": {
 			_apiInfo: {
@@ -1914,6 +1951,13 @@ module.exports = {
 				"validation": {
 					"type": "number"
 				}
+			},
+			"imagePrefix": {
+				"source": ['body.imagePrefix'],
+				"required": true,
+				"validation": {
+					"type": "string"
+				}
 			}
 		},
 		"/hosts/deployNginx": {
@@ -1968,6 +2012,13 @@ module.exports = {
 				"default": 209715200,
 				"validation": {
 					"type": "number"
+				}
+			},
+			"imagePrefix": {
+				"source": ['body.imagePrefix'],
+				"required": true,
+				"validation": {
+					"type": "string"
 				}
 			}
 		},
@@ -2080,6 +2131,13 @@ module.exports = {
 				"validation": {
 					"type": "number"
 				}
+			},
+			"imagePrefix": {
+				"source": ['body.imagePrefix'],
+				"required": true,
+				"validation": {
+					"type": "string"
+				}
 			}
 		},
 		"/hosts/deployDaemon": {
@@ -2175,6 +2233,13 @@ module.exports = {
 				"default": 209715200,
 				"validation": {
 					"type": "number"
+				}
+			},
+			"imagePrefix": {
+				"source": ['body.imagePrefix'],
+				"required": true,
+				"validation": {
+					"type": "string"
 				}
 			}
 		},
@@ -2279,14 +2344,14 @@ module.exports = {
 			},
 			"port": {
 				"source": ['body.port'],
-				"required": true,
+				"required": false,
 				"validation": {
 					"type": "number"
 				}
 			},
 			"role": {
 				"source": ['body.role'],
-				"required": true,
+				"required": false,
 				"validation": {
 					"type": "string",
 					"enum": ['manager', 'worker']
@@ -2354,8 +2419,8 @@ module.exports = {
 				"l": "Scale HA Service",
 				"group": "HA Cloud"
 			},
-			"env": {
-				"source": ['query.env'],
+			"envCode": {
+				"source": ['query.envCode'],
 				"required": true,
 				"validation": {
 					"type": "string"
