@@ -41,10 +41,14 @@
                             <label class="customLabel">Certificates:</label><br />
                             <alert type="success">This driver does not require certificates</alert>
                         </div>
-                        <div ng-if="!config.socketPath">
-                            <label class="customLabel">Manager Nodes:&nbsp;</label>
-                            <span ng-if="config.nodes && config.nodes.length > 0"><span ng-repeat="node in config.nodes">{{node}}<span ng-if="!$last">, </span></span></span>
+                        <div ng-if="config.url">
+                            <label class="customLabel">Remote API URL:&nbsp;</label>{{config.url}}<br />
+                            <label class="customLabel">Config:</label><br />
+                        </div>
+                        <div ng-if="!config.socketPath && !config.url">
+                            <label class="customLabel">Manager Node(s):&nbsp;</label>
                             <span ng-if="!config.nodes || config.nodes.length === 0">No nodes available</span>
+                            <span ng-if="config.nodes && config.nodes.length > 0"><span ng-repeat="node in config.nodes">{{node}}<span ng-if="!$last">, </span></span></span>
                             <br />
                             <label class="customLabel">Certificates:</label><br />
                             <div class="staticDiv">
